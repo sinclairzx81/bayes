@@ -1,6 +1,6 @@
 # bayesian-ts
 
-An implementation of a naive bayes classifier written in typescript. This classifier was written specifically to support the streaming of large amounts of dynamic training data
+A naive bayes classifier written in typescript. This classifier was written specifically to support the streaming of large amounts of dynamic training data
 (in the form of plain javascript objects) where training may happen over a long period of time and classification should be quick and efficient.
 
 Useful for enabling classification services in real-time message based systems.
