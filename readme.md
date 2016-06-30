@@ -1,6 +1,6 @@
-# bayesian-ts
+# bayes-ts
 
-A naive bayes classifier written in typescript. This classifier was written specifically to support the streaming of large amounts of dynamic training data
+A simple naive bayes classifier written in typescript. This classifier was written specifically to support the streaming of large amounts of dynamic training data
 (in the form of plain javascript objects) where training may happen over a long period of time and classification should be quick and efficient.
 
 Useful for enabling classification services in real-time message based systems.
@@ -8,7 +8,7 @@ Useful for enabling classification services in real-time message based systems.
 ## build
 ```
 npm install typescript -g
-tsc bayesian.ts 
+tsc bayes.ts 
 ```
 
 ## training
@@ -21,21 +21,21 @@ such as integers/floats etc. If using this library, you can encode your numerics
 Future work on this library may include some form of linear regression for these types of values.
 
 ```javascript
-let bayesian = new Bayesian()
-bayesian.train({ outlook: "rainy",    temp: "hot",  humidity: "high",   windy: "no",  play_golf: "no" })
-bayesian.train({ outlook: "rainy",    temp: "hot",  humidity: "high",   windy: "yes", play_golf: "no" })
-bayesian.train({ outlook: "overcast", temp: "hot",  humidity: "high",   windy: "no",  play_golf: "yes"})
-bayesian.train({ outlook: "sunny",    temp: "mild", humidity: "high",   windy: "no",  play_golf: "yes"})
-bayesian.train({ outlook: "sunny",    temp: "cool", humidity: "normal", windy: "no",  play_golf: "yes"})
-bayesian.train({ outlook: "sunny",    temp: "cool", humidity: "normal", windy: "yes", play_golf: "no" })
-bayesian.train({ outlook: "overcast", temp: "cool", humidity: "normal", windy: "yes", play_golf: "yes"})
-bayesian.train({ outlook: "rainy",    temp: "mild", humidity: "high",   windy: "no",  play_golf: "no" })
-bayesian.train({ outlook: "rainy",    temp: "cool", humidity: "normal", windy: "no",  play_golf: "yes"})
-bayesian.train({ outlook: "sunny",    temp: "mild", humidity: "normal", windy: "no",  play_golf: "yes"})
-bayesian.train({ outlook: "rainy",    temp: "mild", humidity: "normal", windy: "yes", play_golf: "yes"})
-bayesian.train({ outlook: "overcast", temp: "mild", humidity: "high",   windy: "yes", play_golf: "yes"})
-bayesian.train({ outlook: "overcast", temp: "hot",  humidity: "normal", windy: "no",  play_golf: "yes"})
-bayesian.train({ outlook: "sunny",    temp: "mild", humidity: "high",   windy: "yes", play_golf: "no" })
+let classifier = new NaiveBayes()
+classifier.train({ outlook: "rainy",    temp: "hot",  humidity: "high",   windy: "no",  play_golf: "no" })
+classifier.train({ outlook: "rainy",    temp: "hot",  humidity: "high",   windy: "yes", play_golf: "no" })
+classifier.train({ outlook: "overcast", temp: "hot",  humidity: "high",   windy: "no",  play_golf: "yes"})
+classifier.train({ outlook: "sunny",    temp: "mild", humidity: "high",   windy: "no",  play_golf: "yes"})
+classifier.train({ outlook: "sunny",    temp: "cool", humidity: "normal", windy: "no",  play_golf: "yes"})
+classifier.train({ outlook: "sunny",    temp: "cool", humidity: "normal", windy: "yes", play_golf: "no" })
+classifier.train({ outlook: "overcast", temp: "cool", humidity: "normal", windy: "yes", play_golf: "yes"})
+classifier.train({ outlook: "rainy",    temp: "mild", humidity: "high",   windy: "no",  play_golf: "no" })
+classifier.train({ outlook: "rainy",    temp: "cool", humidity: "normal", windy: "no",  play_golf: "yes"})
+classifier.train({ outlook: "sunny",    temp: "mild", humidity: "normal", windy: "no",  play_golf: "yes"})
+classifier.train({ outlook: "rainy",    temp: "mild", humidity: "normal", windy: "yes", play_golf: "yes"})
+classifier.train({ outlook: "overcast", temp: "mild", humidity: "high",   windy: "yes", play_golf: "yes"})
+classifier.train({ outlook: "overcast", temp: "hot",  humidity: "normal", windy: "no",  play_golf: "yes"})
+classifier.train({ outlook: "sunny",    temp: "mild", humidity: "high",   windy: "yes", play_golf: "no" })
 ```
 ## classification / prediction
 
@@ -49,7 +49,7 @@ Below are some examples.
 
 ### playing golf today
 ```
-let p = bayesian.classify("play_golf", {
+let p = classifier.classify("play_golf", {
   outlook : "sunny",
   temp    : "cool",
   humidity: "high",
@@ -60,7 +60,7 @@ let p = bayesian.classify("play_golf", {
 ```
 ### weather outlook based on humidity.
 ```
-let p = bayesian.classify("outlook", { 
+let p = classifier.classify("outlook", { 
   humidity: "high" 
 }) 
 // = { rainy: 0.4285714285714286, 

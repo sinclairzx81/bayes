@@ -1,6 +1,6 @@
 /*--------------------------------------------------------------------------
 
-bayesian-ts - an implementation of a naive bayes classifier in typescript.
+bayes-ts - an implementation of a naive bayes classifier in typescript.
 
 The MIT License (MIT)
 
@@ -42,13 +42,13 @@ interface Classifier {
 }
 
 /**
- * Bayesian:
+ * NaiveBayes:
  * implementation of the naive bayes algorythm for
  * classifying discrete values within a javascript 
  * object. supports training arbituary data
  * with non uniform feature sets.
  */
-class Bayesian implements Classifier {
+class NaiveBayes implements Classifier {
 
   /**
    * constructs this classifier.
@@ -139,7 +139,7 @@ class Bayesian implements Classifier {
    * classifies this feature with the given object.
    * @param {string} the feature to classify.
    * @param {any} and object that should correlate to the training object data.
-   * @returns {any} the bayesian prediction for the given feature.
+   * @returns {any} the bayes prediction for the given feature.
    */
   public classify (feature: string, obj?: any) : ClassifierResult {
 
@@ -170,7 +170,7 @@ class Bayesian implements Classifier {
       /**
        * normalize and return.
        * for the benefit of the caller, we normalize
-       * the bayesian result such that all its probabilies
+       * the bayes result such that all its probabilies
        * total exactly 1.
        */
       let sum = Object.keys(flat_result).reduce((acc, attribute) => acc + flat_result[attribute], 0)
@@ -195,11 +195,11 @@ class Bayesian implements Classifier {
       }, {})
 
       /**
-       * bayesian probability:
+       * bayes probability:
        * Here, we compute the probability of each attribute, The 
        * results of which are mapped the bayes result object.
        */
-      let bayesian_result = Object.keys(this.bin[feature]).reduce((acc, attribute) => {
+      let bayes_result = Object.keys(this.bin[feature]).reduce((acc, attribute) => {
         /**
          * probability:
          * compute the probability by dividing each attribute bin count 
@@ -211,7 +211,7 @@ class Bayesian implements Classifier {
         }, {})
           
         /**
-         * bayesian rule:
+         * bayes rule:
          * using the bayes rule, we multiply each probability to compute the 
          * likelyhood of this attribute.
          */    
@@ -222,12 +222,12 @@ class Bayesian implements Classifier {
       /**
        * normalize and return.
        * for the benefit of the caller, we normalize
-       * the bayesian result such that all its probabilies
+       * the bayes result such that all its probabilies
        * total exactly 1.
        */
-      let sum = Object.keys(bayesian_result).reduce((acc, attribute) => acc + bayesian_result[attribute], 0)
-      return Object.keys(bayesian_result).reduce((acc, attribute) => {
-        acc[attribute] = bayesian_result[attribute] / sum
+      let sum = Object.keys(bayes_result).reduce((acc, attribute) => acc + bayes_result[attribute], 0)
+      return Object.keys(bayes_result).reduce((acc, attribute) => {
+        acc[attribute] = bayes_result[attribute] / sum
         return acc
       }, {}) as ClassifierResult
     }
