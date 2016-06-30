@@ -33,12 +33,14 @@ THE SOFTWARE.
  * with non uniform feature sets.
  */
 var Bayesian = (function () {
-    function Bayesian() {
-        /**
-         * bin encoding for attribute counts.
-         * count = bin[feature][attribute][feature][attribute]
-         */
-        this.bin = {};
+    /**
+     * constructs this classifier.
+     * @param {any} this classifiers bin data. otherwise will create as empty.
+     * @returns {Classifer}
+     */
+    function Bayesian(bin) {
+        this.bin = bin;
+        this.bin = bin || {};
     }
     /**
      * trains and encodes this javascript objects properties as features.
@@ -127,58 +129,96 @@ var Bayesian = (function () {
     /**
      * classifies this feature with the given object.
      * @param {string} the feature to classify.
-     * @param {any} and object directionary that should correlate to the training object data.
+     * @param {any} and object that should correlate to the training object data.
      * @returns {any} the bayesian prediction for the given feature.
      */
     Bayesian.prototype.classify = function (feature, obj) {
         var _this = this;
-        /**
-         * totals:
-         * The attributes counts keeped under the feature need to be totalled.
-         * To do this, we use the input object to address into the bin to
-         * select the values stored there, we then reduce to a object
-         * we can use later.
-         */
-        var totals = Object.keys(obj).reduce(function (acc, key) {
-            acc[key] = Object.keys(_this.bin[feature]).reduce(function (acc, attribute) {
-                return acc + _this.bin[feature][attribute][key][obj[key]];
-            }, 0);
-            return acc;
-        }, {});
-        /**
-         * bayesian probability:
-         * Here, we compute the probability of each attribute, The
-         * results of which are mapped the bayes result object.
-         */
-        var bayesian_result = Object.keys(this.bin[feature]).reduce(function (acc, attribute) {
+        // no attributes:
+        //
+        // if the caller attempts to classify with no obj, then
+        // we take a different path and try and classify based
+        // on the features attributes alone.
+        if (obj === undefined || Object.keys(obj).length === 0) {
+            var flat_result_1 = {};
             /**
-             * probability:
-             * compute the probability by dividing each attribute bin count
-             * by the total of all attributes.
+             * sum attribute values.
+             * here, we sum the occurances of the given features
+             * attributes. This gives us a probability of finding
+             * this attribute with no correlation to anything
+             * else.
              */
-            var probabilities = Object.keys(obj).reduce(function (acc, key) {
-                acc[key] = _this.bin[feature][attribute][key][obj[key]] / totals[key];
+            Object.keys(this.bin[feature]).forEach(function (la) {
+                Object.keys(_this.bin[feature][la]).forEach(function (rf) {
+                    var attribute = la;
+                    if (flat_result_1[la] === undefined)
+                        flat_result_1[la] = 0;
+                    Object.keys(_this.bin[feature][la][rf]).forEach(function (ra) {
+                        flat_result_1[la] += _this.bin[feature][la][rf][ra];
+                    });
+                });
+            });
+            /**
+             * normalize and return.
+             * for the benefit of the caller, we normalize
+             * the bayesian result such that all its probabilies
+             * total exactly 1.
+             */
+            var sum_1 = Object.keys(flat_result_1).reduce(function (acc, attribute) { return acc + flat_result_1[attribute]; }, 0);
+            return Object.keys(flat_result_1).reduce(function (acc, attribute) {
+                acc[attribute] = flat_result_1[attribute] / sum_1;
+                return acc;
+            }, {});
+        }
+        else {
+            /**
+             * totals:
+             * The attributes counts keeped under the feature need to be totalled.
+             * To do this, we use the input object to address into the bin to
+             * select the values stored there, we then reduce to a object
+             * we can use later.
+             */
+            var totals_1 = Object.keys(obj).reduce(function (acc, key) {
+                acc[key] = Object.keys(_this.bin[feature]).reduce(function (acc, attribute) {
+                    return acc + _this.bin[feature][attribute][key][obj[key]];
+                }, 0);
                 return acc;
             }, {});
             /**
-             * bayesian rule:
-             * using the bayes rule, we multiply each probability to compute the
-             * likelyhood of this attribute.
+             * bayesian probability:
+             * Here, we compute the probability of each attribute, The
+             * results of which are mapped the bayes result object.
              */
-            acc[attribute] = Object.keys(probabilities).reduce(function (acc, feature) { return acc * probabilities[feature]; }, 1);
-            return acc;
-        }, {});
-        /**
-         * normalize and return.
-         * for the benefit of the caller, we normalize
-         * the bayesian result such that all its probabilies
-         * total exactly 1.
-         */
-        var sum = Object.keys(bayesian_result).reduce(function (acc, attribute) { return acc + bayesian_result[attribute]; }, 0);
-        return Object.keys(bayesian_result).reduce(function (acc, attribute) {
-            acc[attribute] = bayesian_result[attribute] / sum;
-            return acc;
-        }, {});
+            var bayesian_result_1 = Object.keys(this.bin[feature]).reduce(function (acc, attribute) {
+                /**
+                 * probability:
+                 * compute the probability by dividing each attribute bin count
+                 * by the total of all attributes.
+                 */
+                var probabilities = Object.keys(obj).reduce(function (acc, key) {
+                    acc[key] = _this.bin[feature][attribute][key][obj[key]] / totals_1[key];
+                    return acc;
+                }, {});
+                /**
+                 * bayesian rule:
+                 * using the bayes rule, we multiply each probability to compute the
+                 * likelyhood of this attribute.
+                 */
+                acc[attribute] = Object.keys(probabilities).reduce(function (acc, feature) { return acc * probabilities[feature]; }, 1);
+                return acc;
+            }, {});
+            /**
+             * normalize and return.
+             * for the benefit of the caller, we normalize
+             * the bayesian result such that all its probabilies
+             * total exactly 1.
+             */
+            var sum_2 = Object.keys(bayesian_result_1).reduce(function (acc, attribute) { return acc + bayesian_result_1[attribute]; }, 0);
+            return Object.keys(bayesian_result_1).reduce(function (acc, attribute) {
+                acc[attribute] = bayesian_result_1[attribute] / sum_2;
+                return acc;
+            }, {});
+        }
     };
     return Bayesian;
 }());

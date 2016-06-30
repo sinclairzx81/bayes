@@ -51,10 +51,13 @@ interface Classifier {
 class Bayesian implements Classifier {
 
   /**
-   * bin encoding for attribute counts.
-   * count = bin[feature][attribute][feature][attribute]
+   * constructs this classifier.
+   * @param {any} this classifiers bin data. otherwise will create as empty.
+   * @returns {Classifer}
    */
-  public bin: any = {}
+  constructor(private bin?: any) {
+    this.bin = bin || {}
+  }
 
   /**
    * trains and encodes this javascript objects properties as features.
@@ -135,59 +138,98 @@ class Bayesian implements Classifier {
   /**
    * classifies this feature with the given object.
    * @param {string} the feature to classify.
-   * @param {any} and object directionary that should correlate to the training object data.
+   * @param {any} and object that should correlate to the training object data.
    * @returns {any} the bayesian prediction for the given feature.
    */
-  public classify (feature: string, obj: any) : ClassifierResult {
+  public classify (feature: string, obj?: any) : ClassifierResult {
 
-    /**
-     * totals:
-     * The attributes counts keeped under the feature need to be totalled.
-     * To do this, we use the input object to address into the bin to 
-     * select the values stored there, we then reduce to a object
-     * we can use later.
-     */
-    let totals = Object.keys(obj).reduce((acc, key) => {
-      acc[key] = Object.keys(this.bin[feature]).reduce((acc, attribute) => {
-        return acc + this.bin[feature][attribute][key][obj[key]]
-      }, 0); return acc
-    }, {})
-
-    /**
-     * bayesian probability:
-     * Here, we compute the probability of each attribute, The 
-     * results of which are mapped the bayes result object.
-     */
-    let bayesian_result = Object.keys(this.bin[feature]).reduce((acc, attribute) => {
+    // no attributes:
+    //
+    // if the caller attempts to classify with no obj, then
+    // we take a different path and try and classify based
+    // on the features attributes alone.
+    if(obj === undefined || Object.keys(obj).length === 0) {
+      let flat_result = {}
+      
       /**
-       * probability:
-       * compute the probability by dividing each attribute bin count 
-       * by the total of all attributes.
+       * sum attribute values.
+       * here, we sum the occurances of the given features
+       * attributes. This gives us a probability of finding
+       * this attribute with no correlation to anything 
+       * else.
+       */      
+      Object.keys(this.bin[feature]).forEach(la => {
+        Object.keys(this.bin[feature][la]).forEach(rf => {
+          let attribute = la
+          if(flat_result[la] === undefined) flat_result[la] = 0
+          Object.keys(this.bin[feature][la][rf]).forEach(ra => {
+           flat_result[la] += this.bin[feature][la][rf][ra]
+          })
+        })
+      })
+      /**
+       * normalize and return.
+       * for the benefit of the caller, we normalize
+       * the bayesian result such that all its probabilies
+       * total exactly 1.
        */
-      let probabilities = Object.keys(obj).reduce((acc, key) => {
-        acc[key] = this.bin[feature][attribute][key][obj[key]] / totals[key]
+      let sum = Object.keys(flat_result).reduce((acc, attribute) => acc + flat_result[attribute], 0)
+      return Object.keys(flat_result).reduce((acc, attribute) => {
+        acc[attribute] = flat_result[attribute] / sum
+        return acc
+      }, {}) as ClassifierResult
+
+    } else {
+
+      /**
+       * totals:
+       * The attributes counts keeped under the feature need to be totalled.
+       * To do this, we use the input object to address into the bin to 
+       * select the values stored there, we then reduce to a object
+       * we can use later.
+       */
+      let totals = Object.keys(obj).reduce((acc, key) => {
+        acc[key] = Object.keys(this.bin[feature]).reduce((acc, attribute) => {
+          return acc + this.bin[feature][attribute][key][obj[key]]
+        }, 0); return acc
+      }, {})
+
+      /**
+       * bayesian probability:
+       * Here, we compute the probability of each attribute, The 
+       * results of which are mapped the bayes result object.
+       */
+      let bayesian_result = Object.keys(this.bin[feature]).reduce((acc, attribute) => {
+        /**
+         * probability:
+         * compute the probability by dividing each attribute bin count 
+         * by the total of all attributes.
+         */
+        let probabilities = Object.keys(obj).reduce((acc, key) => {
+          acc[key] = this.bin[feature][attribute][key][obj[key]] / totals[key]
+          return acc
+        }, {})
+          
+        /**
+         * bayesian rule:
+         * using the bayes rule, we multiply each probability to compute the 
+         * likelyhood of this attribute.
+         */    
+        acc[attribute] = Object.keys(probabilities).reduce((acc, feature) => acc * probabilities[feature], 1)
         return acc
       }, {})
-        
-      /**
-       * bayesian rule:
-       * using the bayes rule, we multiply each probability to compute the 
-       * likelyhood of this attribute.
-       */    
-      acc[attribute] = Object.keys(probabilities).reduce((acc, feature) => acc * probabilities[feature], 1)
-      return acc
-    }, {})
 
-    /**
-     * normalize and return.
-     * for the benefit of the caller, we normalize
-     * the bayesian result such that all its probabilies
-     * total exactly 1.
-     */
-    let sum = Object.keys(bayesian_result).reduce((acc, attribute) => acc + bayesian_result[attribute], 0)
-    return Object.keys(bayesian_result).reduce((acc, attribute) => {
-      acc[attribute] = bayesian_result[attribute] / sum
-      return acc
-    }, {}) as ClassifierResult
+      /**
+       * normalize and return.
+       * for the benefit of the caller, we normalize
+       * the bayesian result such that all its probabilies
+       * total exactly 1.
+       */
+      let sum = Object.keys(bayesian_result).reduce((acc, attribute) => acc + bayesian_result[attribute], 0)
+      return Object.keys(bayesian_result).reduce((acc, attribute) => {
+        acc[attribute] = bayesian_result[attribute] / sum
+        return acc
+      }, {}) as ClassifierResult
+    }
   }
 }
