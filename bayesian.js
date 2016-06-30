@@ -1,6 +1,6 @@
 /*--------------------------------------------------------------------------
 
-bayesian-ts - an implementation of naive bayes in typescript.
+bayesian-ts - an implementation of a naive bayes classifier in typescript.
 
 The MIT License (MIT)
 
@@ -41,19 +41,20 @@ var Bayesian = (function () {
         this.bin = {};
     }
     /**
-     * trains the classifier with this object.
-     * @param   {any} any javascript object
+     * trains and encodes this javascript objects properties as features.
+     * @param   {any} A javascript object whose properties should be finite strings.
      * @returns {void}
      */
     Bayesian.prototype.train = function (obj) {
         var _this = this;
-        //--------------------------------------------------------------
-        // detect: determimne if the object being passed is a new feature 
-        //         or attribute. This would require a update to the bin 
-        //         to apply this feature/attribute across the all features,
-        //         the application across the board is expensive, so this
-        //         can be considered a optimization step.
-        //--------------------------------------------------------------
+        /**
+         * detect
+         * determimne if the object being passed is a new feature
+         * or attribute. This would require a update to the bin
+         * to apply this feature/attribute across the all features,
+         * the application across the board is expensive, so this
+         * can be considered a optimization step.
+         */
         var needsupdate = false;
         var keys = Object.keys(obj);
         for (var i = 0; i < keys.length; i++) {
@@ -65,9 +66,18 @@ var Bayesian = (function () {
                 break;
             }
         }
-        //--------------------------------------------------------------
-        // insert: increments the count for the feature/attribute pair.
-        //--------------------------------------------------------------
+        /**
+         * insert:
+         * from the object passed in, we scan both left and right
+         * keys and use them to address into the bin. If at any
+         * point we find undefined (as would be the case for new
+         * features or attributes), we simply initialize it.
+         *
+         * When we get the the count value at the end of the chain,
+         * we set its value to 1 if not exists or simply increment
+         * the value by one if it does. It is these counts that
+         * are used during classification.
+         */
         Object.keys(obj).forEach(function (lk) {
             Object.keys(obj).forEach(function (rk) {
                 if (lk === rk)
@@ -84,9 +94,15 @@ var Bayesian = (function () {
                     _this.bin[lk][obj[lk]][rk][obj[rk]] += 1;
             });
         });
-        //--------------------------------------------------------------
-        // update: ensures all attributes exist for all features.
-        //--------------------------------------------------------------
+        /**
+         * update bin:
+         * For consistency (and simplification), we initialize
+         * new features / attributes as having 0 counts across
+         * existing features. To achieve this, we need to scan
+         * quite deep into the bin for a number of iterations,
+         * therefore we only do this if we have detected that
+         * we need to (see needs update)
+         */
         if (needsupdate) {
             Object.keys(this.bin).forEach(function (lf) {
                 Object.keys(_this.bin).forEach(function (rf) {
@@ -116,41 +132,53 @@ var Bayesian = (function () {
      */
     Bayesian.prototype.classify = function (feature, obj) {
         var _this = this;
-        //--------------------------------------------------------------
-        // total: attributes counts for given feature.
-        //--------------------------------------------------------------
+        /**
+         * totals:
+         * The attributes counts keeped under the feature need to be totalled.
+         * To do this, we use the input object to address into the bin to
+         * select the values stored there, we then reduce to a object
+         * we can use later.
+         */
         var totals = Object.keys(obj).reduce(function (acc, key) {
             acc[key] = Object.keys(_this.bin[feature]).reduce(function (acc, attribute) {
                 return acc + _this.bin[feature][attribute][key][obj[key]];
             }, 0);
             return acc;
         }, {});
-        //--------------------------------------------------------------
-        // compute bayesian result
-        //--------------------------------------------------------------
-        var bayesian = Object.keys(this.bin[feature]).reduce(function (acc, attribute) {
-            // compute the probability by dividing each attribute count by the total.
+        /**
+         * bayesian probability:
+         * Here, we compute the probability of each attribute, The
+         * results of which are mapped the bayes result object.
+         */
+        var bayesian_result = Object.keys(this.bin[feature]).reduce(function (acc, attribute) {
+            /**
+             * probability:
+             * compute the probability by dividing each attribute bin count
+             * by the total of all attributes.
+             */
             var probabilities = Object.keys(obj).reduce(function (acc, key) {
                 acc[key] = _this.bin[feature][attribute][key][obj[key]] / totals[key];
                 return acc;
             }, {});
-            //--------------------------------------------------------------      
-            // multiply the probabilities to give the prediction for this attribute.
-            //--------------------------------------------------------------      
-            acc[attribute] = Object.keys(probabilities).reduce(function (acc, feature) {
-                return acc * probabilities[feature];
-            }, 1);
+            /**
+             * bayesian rule:
+             * using the bayes rule, we multiply each probability to compute the
+             * likelyhood of this attribute.
+             */
+            acc[attribute] = Object.keys(probabilities).reduce(function (acc, feature) { return acc * probabilities[feature]; }, 1);
             return acc;
         }, {});
-        //--------------------------------------------------------------      
-        // normalize the probabilities to sum as 1.
-        //-------------------------------------------------------------- 
-        var sum = Object.keys(bayesian).reduce(function (acc, attribute) { return acc + bayesian[attribute]; }, 0);
-        var result = Object.keys(bayesian).reduce(function (acc, attribute) {
-            acc[attribute] = bayesian[attribute] / sum;
+        /**
+         * normalize and return.
+         * for the benefit of the caller, we normalize
+         * the bayesian result such that all its probabilies
+         * total exactly 1.
+         */
+        var sum = Object.keys(bayesian_result).reduce(function (acc, attribute) { return acc + bayesian_result[attribute]; }, 0);
+        return Object.keys(bayesian_result).reduce(function (acc, attribute) {
+            acc[attribute] = bayesian_result[attribute] / sum;
             return acc;
         }, {});
-        return result;
     };
     return Bayesian;
 }());
