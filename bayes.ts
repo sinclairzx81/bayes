@@ -30,7 +30,7 @@ interface IMap<V> {
   [key: string]: V
 }
 
-class Parameter {
+interface Parameter {
   feature   : string
   attribute : string
 }

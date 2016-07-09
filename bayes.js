@@ -25,11 +25,6 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 
 ---------------------------------------------------------------------------*/
-var Parameter = (function () {
-    function Parameter() {
-    }
-    return Parameter;
-}());
 var NaiveBayes = (function () {
     /**
      * creates a new classifier.
