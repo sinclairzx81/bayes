@@ -76,8 +76,9 @@ var NaiveBayes = (function () {
         else {
             var sums_1 = Object.keys(obj).reduce(function (sums, inner_feature) {
                 sums[inner_feature] = Object.keys(_this.state.correlations[feature]).reduce(function (sum, attribute) {
-                    if (_this.state.correlations[feature][attribute][inner_feature] !== undefined ||
-                        _this.state.correlations[feature][attribute][inner_feature][obj[inner_feature]] !== undefined) {
+                    if (obj[inner_feature] !== undefined
+                        && _this.state.correlations[feature][attribute][inner_feature] !== undefined
+                        && _this.state.correlations[feature][attribute][inner_feature][obj[inner_feature]] !== undefined) {
                         return sum + _this.state.correlations[feature][attribute][inner_feature][obj[inner_feature]];
                     }
                     else
@@ -87,8 +88,9 @@ var NaiveBayes = (function () {
             }, {});
             var result_1 = Object.keys(this.state.correlations[feature]).reduce(function (result, attribute) {
                 var probabilities = Object.keys(obj).reduce(function (probabilities, inner_feature) {
-                    if (_this.state.correlations[feature][attribute][inner_feature] !== undefined
-                        || _this.state.correlations[feature][attribute][inner_feature][obj[inner_feature]] !== undefined) {
+                    if (obj[inner_feature] !== undefined
+                        && _this.state.correlations[feature][attribute][inner_feature] !== undefined
+                        && _this.state.correlations[feature][attribute][inner_feature][obj[inner_feature]] !== undefined) {
                         probabilities[inner_feature] = _this.state.correlations[feature][attribute][inner_feature][obj[inner_feature]] / sums_1[inner_feature];
                     }
                     else

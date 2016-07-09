@@ -95,8 +95,9 @@ class NaiveBayes implements Classifier {
     else {
       let sums = Object.keys(obj).reduce((sums, inner_feature) => {
         sums[inner_feature] = Object.keys(this.state.correlations[feature]).reduce((sum, attribute) => {
-          if(this.state.correlations[feature][attribute][inner_feature] !== undefined ||
-             this.state.correlations[feature][attribute][inner_feature][obj[inner_feature]] !== undefined){
+          if( obj[inner_feature] !== undefined
+           && this.state.correlations[feature][attribute][inner_feature] !== undefined
+           && this.state.correlations[feature][attribute][inner_feature][obj[inner_feature]] !== undefined){
                return sum + this.state.correlations[feature][attribute][inner_feature][obj[inner_feature]]
              } else return sum
         }, 0); 
@@ -104,8 +105,9 @@ class NaiveBayes implements Classifier {
       }, {})
       let result = Object.keys(this.state.correlations[feature]).reduce((result, attribute) => {
         let probabilities = Object.keys(obj).reduce((probabilities, inner_feature) => {
-          if( this.state.correlations[feature][attribute][inner_feature] !== undefined
-           || this.state.correlations[feature][attribute][inner_feature][obj[inner_feature]] !== undefined) {
+          if( obj[inner_feature] !== undefined 
+           && this.state.correlations[feature][attribute][inner_feature] !== undefined
+           && this.state.correlations[feature][attribute][inner_feature][obj[inner_feature]] !== undefined) {
                probabilities[inner_feature] = this.state.correlations[feature][attribute][inner_feature][obj[inner_feature]] / sums[inner_feature]
              } else probabilities[inner_feature] = 0
           return probabilities
