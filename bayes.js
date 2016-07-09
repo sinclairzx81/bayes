@@ -1,6 +1,6 @@
 /*--------------------------------------------------------------------------
 
-bayes-ts - an implementation of a naive bayes classifier in typescript.
+bayesian-ts - an implementation of a naive bayes classifier in typescript.
 
 The MIT License (MIT)
 
@@ -25,200 +25,148 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 
 ---------------------------------------------------------------------------*/
-/**
- * NaiveBayes:
- * implementation of the naive bayes algorythm for
- * classifying discrete values within a javascript
- * object. supports training arbituary data
- * with non uniform feature sets.
- */
+var Parameter = (function () {
+    function Parameter() {
+    }
+    return Parameter;
+}());
 var NaiveBayes = (function () {
     /**
-     * constructs this classifier.
-     * @param {any} this classifiers bin data. otherwise will create as empty.
-     * @returns {Classifer}
+     * creates a new classifier.
+     * @returns {NaiveBayes}
      */
-    function NaiveBayes(bin) {
-        this.bin = bin;
-        this.bin = bin || {};
+    function NaiveBayes(state) {
+        this.state = state;
+        this.state = this.state || {
+            features: {},
+            correlations: {}
+        };
     }
     /**
-     * trains and encodes this javascript objects properties as features.
-     * @param   {any} A javascript object whose properties should be finite strings.
+     * trains this classifer with this object.
+     * @param {any} the javascript object to train this classifier with.
      * @returns {void}
      */
     NaiveBayes.prototype.train = function (obj) {
         var _this = this;
-        /**
-         * detect
-         * determimne if the object being passed is a new feature
-         * or attribute. This would require a update to the bin
-         * to apply this feature/attribute across the all features,
-         * the application across the board is expensive, so this
-         * can be considered a optimization step.
-         */
-        var needsupdate = false;
-        var keys = Object.keys(obj);
-        for (var i = 0; i < keys.length; i++) {
-            var feature = keys[i];
-            var attribute = obj[keys[i]];
-            if (this.bin[feature] === undefined ||
-                this.bin[feature][attribute] === undefined) {
-                needsupdate = true;
-                break;
-            }
-        }
-        /**
-         * insert:
-         * from the object passed in, we scan both left and right
-         * keys and use them to address into the bin. If at any
-         * point we find undefined (as would be the case for new
-         * features or attributes), we simply initialize it.
-         *
-         * When we get the the count value at the end of the chain,
-         * we set its value to 1 if not exists or simply increment
-         * the value by one if it does. It is these counts that
-         * are used during classification.
-         */
-        Object.keys(obj).forEach(function (lk) {
-            Object.keys(obj).forEach(function (rk) {
-                if (lk === rk)
-                    return;
-                if (_this.bin[lk] === undefined)
-                    _this.bin[lk] = {};
-                if (_this.bin[lk][obj[lk]] === undefined)
-                    _this.bin[lk][obj[lk]] = {};
-                if (_this.bin[lk][obj[lk]][rk] === undefined)
-                    _this.bin[lk][obj[lk]][rk] = {};
-                if (_this.bin[lk][obj[lk]][rk][obj[rk]] === undefined)
-                    _this.bin[lk][obj[lk]][rk][obj[rk]] = 1;
-                else
-                    _this.bin[lk][obj[lk]][rk][obj[rk]] += 1;
-            });
-        });
-        /**
-         * update bin:
-         * For consistency (and simplification), we initialize
-         * new features / attributes as having 0 counts across
-         * existing features. To achieve this, we need to scan
-         * quite deep into the bin for a number of iterations,
-         * therefore we only do this if we have detected that
-         * we need to (see needs update)
-         */
-        if (needsupdate) {
-            Object.keys(this.bin).forEach(function (lf) {
-                Object.keys(_this.bin).forEach(function (rf) {
-                    if (lf === rf)
-                        return;
-                    Object.keys(_this.bin[lf]).forEach(function (la) {
-                        Object.keys(_this.bin[rf]).forEach(function (ra) {
-                            if (_this.bin[lf] === undefined)
-                                _this.bin[lf] = {};
-                            if (_this.bin[lf][la] === undefined)
-                                _this.bin[lf][la] = {};
-                            if (_this.bin[lf][la][rf] === undefined)
-                                _this.bin[lf][la][rf] = {};
-                            if (_this.bin[lf][la][rf][ra] === undefined)
-                                _this.bin[lf][la][rf][ra] = 0;
-                        });
-                    });
-                });
-            });
-        }
+        var parameters = Object.keys(obj).map(function (key) { return ({ feature: key, attribute: obj[key] }); });
+        parameters.forEach(function (parameter) { return _this.insert_feature(parameter); });
+        parameters.forEach(function (left) { return parameters.forEach(function (right) {
+            if (left.feature === right.feature)
+                return;
+            _this.insert_correlation(left, right);
+        }); });
     };
     /**
      * classifies this feature with the given object.
      * @param {string} the feature to classify.
-     * @param {any} and object that should correlate to the training object data.
+     * @param {any} an optional feature
      * @returns {any} the bayes prediction for the given feature.
      */
     NaiveBayes.prototype.classify = function (feature, obj) {
         var _this = this;
-        // no attributes:
-        //
-        // if the caller attempts to classify with no obj, then
-        // we take a different path and try and classify based
-        // on the features attributes alone.
-        if (obj === undefined || Object.keys(obj).length === 0) {
-            var flat_result_1 = {};
-            /**
-             * sum attribute values.
-             * here, we sum the occurances of the given features
-             * attributes. This gives us a probability of finding
-             * this attribute with no correlation to anything
-             * else.
-             */
-            Object.keys(this.bin[feature]).forEach(function (la) {
-                Object.keys(_this.bin[feature][la]).forEach(function (rf) {
-                    var attribute = la;
-                    if (flat_result_1[la] === undefined)
-                        flat_result_1[la] = 0;
-                    Object.keys(_this.bin[feature][la][rf]).forEach(function (ra) {
-                        flat_result_1[la] += _this.bin[feature][la][rf][ra];
-                    });
-                });
-            });
-            /**
-             * normalize and return.
-             * for the benefit of the caller, we normalize
-             * the bayes result such that all its probabilies
-             * total exactly 1.
-             */
-            var sum_1 = Object.keys(flat_result_1).reduce(function (acc, attribute) { return acc + flat_result_1[attribute]; }, 0);
-            return Object.keys(flat_result_1).reduce(function (acc, attribute) {
-                acc[attribute] = flat_result_1[attribute] / sum_1;
+        if (this.state.features[feature] === undefined) {
+            return {};
+        }
+        else if (obj === undefined || Object.keys(obj).length === 0) {
+            var sum_1 = Object.keys(this.state.features[feature])
+                .map(function (attribute) { return _this.state.features[feature][attribute]; })
+                .reduce(function (acc, count) { return acc + count; }, 0);
+            return Object.keys(this.state.features[feature])
+                .reduce(function (acc, attribute) {
+                acc[attribute] = _this.state.features[feature][attribute] / sum_1;
                 return acc;
             }, {});
         }
         else {
-            /**
-             * totals:
-             * The attributes counts keeped under the feature need to be totalled.
-             * To do this, we use the input object to address into the bin to
-             * select the values stored there, we then reduce to a object
-             * we can use later.
-             */
-            var totals_1 = Object.keys(obj).reduce(function (acc, key) {
-                acc[key] = Object.keys(_this.bin[feature]).reduce(function (acc, attribute) {
-                    return acc + _this.bin[feature][attribute][key][obj[key]];
+            var sums_1 = Object.keys(obj).reduce(function (sums, inner_feature) {
+                sums[inner_feature] = Object.keys(_this.state.correlations[feature]).reduce(function (sum, attribute) {
+                    if (_this.state.correlations[feature][attribute][inner_feature] !== undefined ||
+                        _this.state.correlations[feature][attribute][inner_feature][obj[inner_feature]] !== undefined) {
+                        return sum + _this.state.correlations[feature][attribute][inner_feature][obj[inner_feature]];
+                    }
+                    else
+                        return sum;
                 }, 0);
-                return acc;
+                return sums;
             }, {});
-            /**
-             * bayes probability:
-             * Here, we compute the probability of each attribute, The
-             * results of which are mapped the bayes result object.
-             */
-            var bayes_result_1 = Object.keys(this.bin[feature]).reduce(function (acc, attribute) {
-                /**
-                 * probability:
-                 * compute the probability by dividing each attribute bin count
-                 * by the total of all attributes.
-                 */
-                var probabilities = Object.keys(obj).reduce(function (acc, key) {
-                    acc[key] = _this.bin[feature][attribute][key][obj[key]] / totals_1[key];
-                    return acc;
+            var result_1 = Object.keys(this.state.correlations[feature]).reduce(function (result, attribute) {
+                var probabilities = Object.keys(obj).reduce(function (probabilities, inner_feature) {
+                    if (_this.state.correlations[feature][attribute][inner_feature] !== undefined
+                        || _this.state.correlations[feature][attribute][inner_feature][obj[inner_feature]] !== undefined) {
+                        probabilities[inner_feature] = _this.state.correlations[feature][attribute][inner_feature][obj[inner_feature]] / sums_1[inner_feature];
+                    }
+                    else
+                        probabilities[inner_feature] = 0;
+                    return probabilities;
                 }, {});
-                /**
-                 * bayes rule:
-                 * using the bayes rule, we multiply each probability to compute the
-                 * likelyhood of this attribute.
-                 */
-                acc[attribute] = Object.keys(probabilities).reduce(function (acc, feature) { return acc * probabilities[feature]; }, 1);
-                return acc;
+                result[attribute] = Object.keys(probabilities).reduce(function (acc, feature) { return acc * probabilities[feature]; }, 1);
+                return result;
             }, {});
-            /**
-             * normalize and return.
-             * for the benefit of the caller, we normalize
-             * the bayes result such that all its probabilies
-             * total exactly 1.
-             */
-            var sum_2 = Object.keys(bayes_result_1).reduce(function (acc, attribute) { return acc + bayes_result_1[attribute]; }, 0);
-            return Object.keys(bayes_result_1).reduce(function (acc, attribute) {
-                acc[attribute] = bayes_result_1[attribute] / sum_2;
+            var sum_2 = Object.keys(result_1).reduce(function (acc, attribute) { return acc + result_1[attribute]; }, 0);
+            return Object.keys(result_1).reduce(function (acc, attribute) {
+                acc[attribute] = sum_2 > 0 ? result_1[attribute] / sum_2 : 0;
                 return acc;
             }, {});
         }
+    };
+    /**
+     * inserts this feature into the feature map, and increments its occurance value +1
+     * @param {Parameter} the feature/attribute pair.
+     * @returns {void}
+     */
+    NaiveBayes.prototype.insert_feature = function (parameter) {
+        if (this.state.features[parameter.feature] === undefined)
+            this.state.features[parameter.feature] = {};
+        if (this.state.features[parameter.feature][parameter.attribute] === undefined) {
+            this.state.features[parameter.feature][parameter.attribute] = 1;
+        }
+        else
+            this.state.features[parameter.feature][parameter.attribute] += 1;
+    };
+    /**
+     * inserts this correlation in to the correlation map. increments its occurance value +1.
+     * This function updates both left and right, feature/attribute pairs, which is a duplication
+     * of data, but no more than representing the data in a ND matrix.
+     * @param {Parameter} the left feature/attribute pair.
+     * @param {Parameter} the right feature/attribute pair.
+     * @returns {void}
+     */
+    NaiveBayes.prototype.insert_correlation = function (left, right) {
+        var _this = this;
+        var needs_update = false;
+        if (this.state.correlations[left.feature] === undefined)
+            this.state.correlations[left.feature] = {};
+        if (this.state.correlations[left.feature][left.attribute] === undefined)
+            this.state.correlations[left.feature][left.attribute] = {};
+        if (this.state.correlations[left.feature][left.attribute][right.feature] === undefined)
+            this.state.correlations[left.feature][left.attribute][right.feature] = {};
+        if (this.state.correlations[left.feature][left.attribute][right.feature][right.attribute] === undefined) {
+            this.state.correlations[left.feature][left.attribute][right.feature][right.attribute] = 1;
+            needs_update = true;
+        }
+        else
+            this.state.correlations[left.feature][left.attribute][right.feature][right.attribute] += 1;
+        if (needs_update === false)
+            return;
+        Object.keys(this.state.correlations).forEach(function (left_feature) {
+            Object.keys(_this.state.correlations).forEach(function (right_feature) {
+                if (left_feature === right_feature)
+                    return;
+                Object.keys(_this.state.correlations[left_feature]).forEach(function (left_attribute) {
+                    Object.keys(_this.state.correlations[right_feature]).forEach(function (right_attribute) {
+                        if (_this.state.correlations[left_feature] === undefined)
+                            _this.state.correlations[left_feature] = {};
+                        if (_this.state.correlations[left_feature][left_attribute] === undefined)
+                            _this.state.correlations[left_feature][left_attribute] = {};
+                        if (_this.state.correlations[left_feature][left_attribute][right_feature] === undefined)
+                            _this.state.correlations[left_feature][left_attribute][right_feature] = {};
+                        if (_this.state.correlations[left_feature][left_attribute][right_feature][right_attribute] === undefined)
+                            _this.state.correlations[left_feature][left_attribute][right_feature][right_attribute] = 0;
+                    });
+                });
+            });
+        });
     };
     return NaiveBayes;
 }());

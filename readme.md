@@ -1,7 +1,9 @@
 # bayes-ts
 
-A simple naive bayes classifier written in typescript. This classifier was written specifically to support the streaming of large amounts of dynamic training data
-(in the form of plain javascript objects) where training may happen over a long period of time and classification should be quick and efficient.
+A naive bayes classifier written in typescript. This classifier was written specifically to support streaming large amounts of dynamic training data
+(given in the form of plain javascript objects) in real-time. This classifier is able to learn new features at random, and can be trained with
+non structured javascript objects of varying properties. The classifier runs with a low memory footprint, and makes persisting training data is 
+straight forward.
 
 Useful for enabling classification services in real-time message based systems.
 
@@ -13,12 +15,12 @@ tsc bayes.ts
 
 ## training
 
-In the following example, we train the classifier with a basic weather dataset. After creating the classifier, we train it with plain javascript objects. The classifier will internally
-treat each property on the object as a feature of the training set, and bin the data accordingly.
+In the following example, we train the classifier with a basic weather dataset. The classifier is passed a series 
+of training samples as javascript objects.
 
-note: this algorithm only supports discrete values (i.e. fixed options represented as strings, think enums), and not continuous numeric values 
-such as integers/floats etc. If using this library, you can encode your numerics as ranges (i.e. use "between 10 and 20" as a string and not the number 19). 
-Future work on this library may include some form of linear regression for these types of values.
+note: this algorithm only supports quantized attribute values, and not continuous numeric values such as integers/floats etc. 
+If using this library, you can encode your numerical data as strings. For example, instead of passing the number '25', you can quantize
+this value as "between 20 and 30". 
 
 ```javascript
 let classifier = new NaiveBayes()
@@ -39,39 +41,55 @@ classifier.train({ outlook: "sunny",    temp: "mild", humidity: "high",   windy:
 ```
 ## classification / prediction
 
-Once the classifier has been trained, it then becomes possible to classify known attributes of the training data. When classifying, 
-the caller can expect a unit weighted result for each attribute on the feature being classified. The sum of all weights in the result
-will total 1.
-
-This library supports partial classification based on a subset of given feature / attributes. 
-
-Below are some examples.
+Once the classifier has been trained, it then becomes possible to classify features.
 
 ### playing golf today
+
+asks the likelyhood of playing golf with these conditions.
+
 ```
 let p = classifier.classify("play_golf", {
   outlook : "sunny",
   temp    : "cool",
   humidity: "high",
   windy   : "yes",
-}) 
-// = { no: 0.2285714285714286, 
-//     yes: 0.7714285714285715 }
+})
+// p = { no : 0.2285714285714286, 
+//       yes: 0.7714285714285715 }
 ```
-### weather outlook based on humidity.
+### weather outlook based on humidity
+
+classifies the weather outlook based on only the humidity. other features are ignored in classification.
+
 ```
 let p = classifier.classify("outlook", { 
   humidity: "high" 
 }) 
-// = { rainy: 0.4285714285714286, 
-//     overcast: 0.28571428571428575, 
-//     sunny: 0.28571428571428575 }
+// p = { rainy    : 0.4285714285714286, 
+//       overcast : 0.28571428571428575, 
+//       sunny    : 0.28571428571428575 }
 ```
+
+### probability distribution
+
+obtain a features probability distribution, ignoring all other features.
+
+```
+let p = classifier.classify("temp")
+
+// p = { hot  : 0.2857142857142857,
+//       mild : 0.42857142857142855,
+//       cool : 0.2857142857142857 }
+```
+
 ## persisting training data
 
-Its possible to persist training data by JSON serializing the classifiers bin.
+Its possible to persist training data by saving the classifiers state.
 
 ``` javascript
-  let data = JSON.stringify(classifier.bin)
-  // save data somehow.
+  let state = classifier.state
+
+  // save state as json...which can be loaded with...
+
+  let classifier = new NaiveBayes(state)
 ```
