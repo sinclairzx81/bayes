@@ -1,6 +1,6 @@
 /*--------------------------------------------------------------------------
 
-bayesian-ts - an implementation of a naive bayes classifier in typescript.
+bayes-ts - an implementation of a naive bayes classifier in typescript.
 
 The MIT License (MIT)
 
