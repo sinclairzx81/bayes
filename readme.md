@@ -1,4 +1,4 @@
-# bayes-ts
+# bayes
 
 A naive bayes classifier written in typescript. This classifier was written specifically to support streaming large amounts of dynamic training data
 (given in the form of plain javascript objects) in real-time. This classifier is able to learn new features at random, and can be trained with
